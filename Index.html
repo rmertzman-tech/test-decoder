@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UCP V5.02 | 2008 Financial Analog & Defense Lab</title>
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --panel: #16161a;
+            --accent: #00f2ff;
+            --parasite: #ff3366;
+            --text: #e0e0e0;
+            --coherent: #00ff88;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: 350px;
+            background: var(--panel);
+            padding: 20px;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        /* Simulation Canvas */
+        #main-stage {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            background: #000;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            image-rendering: pixelated;
+        }
+
+        /* UI Elements */
+        .card {
+            background: #1c1c21;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        h2, h3 { color: var(--accent); margin-top: 0; }
+        
+        .narrative-box {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #bbb;
+            background: #000;
+            padding: 10px;
+            border: 1px dashed #444;
+            margin-bottom: 10px;
+        }
+
+        .metric {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: var(--coherent);
+        }
+
+        .defense-active {
+            border-left: 4px solid var(--coherent) !important;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .slider-label { display: flex; justify-content: space-between; font-size: 0.8rem; }
+        input[type=range] { width: 100%; margin: 10px 0; }
+
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>UCP V5.02 Engine</h2>
+    
+    <div class="card" id="narrative-card">
+        <h3>Timeline: <span id="year-label">2002</span></h3>
+        <div id="narrative-text" class="narrative-box">
+            Welcome to the Constructor's Dashboard. We begin in 2002. The system is coherent.
+        </div>
+        <button onclick="nextStep()">Advance Timeline →</button>
+    </div>
+
+    <div class="card">
+        <h3>Constructor Controls</h3>
+        <div class="slider-label"><span>Leverage Cycle (Farmer)</span><span id="lev-val">1.0x</span></div>
+        <input type="range" id="leverage" min="1" max="40" value="1" step="0.1">
+
+        <div class="slider-label"><span>Disclosure Transparency</span><span id="trans-val">100%</span></div>
+        <input type="range" id="transparency" min="0" max="100" value="100">
+    </div>
+
+    <div class="card" id="defense-card">
+        <h3>p-adic Defense Mechanism</h3>
+        <label>
+            <input type="checkbox" id="defense-toggle"> Activate p-adic Invariant Check
+        </label>
+        <p style="font-size: 0.75rem; color: #888; margin-top:5px;">
+            Prevents state transitions where |x|ₚ exceeds the integrity floor.
+        </p>
+    </div>
+
+    <div class="card">
+        <h3>Live Metrics</h3>
+        <div class="metric">AMC Coherence: <span id="coherence-score">1.000</span></div>
+        <div class="metric" style="color:var(--parasite)">Parasite Load: <span id="parasite-score">0.00</span></div>
+    </div>
+</div>
+
+<div id="main-stage">
+    <div style="margin-bottom: 10px; text-align: center;">
+        <h1 style="margin:0; color:var(--accent);">HOLOGRAPHIC COHERENCE MAP</h1>
+        <small>Bright = Functional Commonwealth | Dark = Foreclosure Ripples (Entropy)</small>
+    </div>
+    <canvas id="amcCanvas" width="600" height="600"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('amcCanvas');
+    const ctx = canvas.getContext('2d');
+    const gridSize = 60;
+    const cellSize = 10;
+    
+    // Agent Grid: 1.0 is healthy, 0.0 is foreclosed
+    let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(1.0));
+    let step = 0;
+
+    const timeline = [
+        { year: 2002, lev: 1, trans: 95, text: "2002-2004: Post-dotcom stability. Interest rates are low. Institutional agents begin seeking higher yield CIBs through subprime housing assets." },
+        { year: 2005, lev: 15, trans: 70, text: "2005-2006: The 'Leverage Cycle' accelerates. CDOs are created with Limited Disclosure. Note the minor Parasite Signatures appearing as localized incoherence." },
+        { year: 2007, lev: 32, trans: 30, text: "2007: Saturation. The system is highly leveraged. Regulatory Sync is complete. One small 'Incoherence Spike' could now trigger a holographic collapse." },
+        { year: 2008, lev: 40, trans: 5, text: "2008: CRASH. Lehman Brothers fails. Foreclosure ripples cascade through the 'Millions of People' (Retail Nodes). The Commonwealth fractures." }
+    ];
+
+    function nextStep() {
+        if (step < timeline.length - 1) {
+            step++;
+            const s = timeline[step];
+            document.getElementById('year-label').innerText = s.year;
+            document.getElementById('narrative-text').innerText = s.text;
+            document.getElementById('leverage').value = s.lev;
+            document.getElementById('transparency').value = s.trans;
+            
+            if(s.year === 2008) triggerIncoherenceSpikes(12);
+        } else {
+            alert("Simulation Complete. Analyze the 'Nothing for the Millions' outcome.");
+        }
+    }
+
+    function triggerIncoherenceSpikes(count) {
+        for(let i=0; i<count; i++) {
+            let rx = Math.floor(Math.random() * gridSize);
+            let ry = Math.floor(Math.random() * gridSize);
+            grid[ry][rx] = 0.1; 
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,600,600);
+        let currentCoherence = 0;
+        let totalParasite = 0;
+
+        const lev = parseFloat(document.getElementById('leverage').value);
+        const trans = parseFloat(document.getElementById('transparency').value) / 100;
+        const defenseOn = document.getElementById('defense-toggle').checked;
+
+        document.getElementById('lev-val').innerText = lev.toFixed(1) + "x";
+        document.getElementById('trans-val').innerText = (trans*100).toFixed(0) + "%";
+        document.getElementById('defense-card').className = defenseOn ? "card defense-active" : "card";
+
+        // p-adic Defense Logic: |x|p 
+        // If leverage is too high relative to transparency, p-adic check blocks extraction
+        const p = 5;
+        const padicDist = Math.pow(p, -Math.floor(Math.log(lev + 0.1) / Math.log(p)));
+        const blockedByDefense = defenseOn && (padicDist < 0.2 || trans < 0.4);
+
+        let nextGrid = grid.map(row => [...row]);
+
+        for (let y = 0; y < gridSize; y++) {
+            for (let x = 0; x < gridSize; x++) {
+                let val = grid[y][x];
+
+                // 1. Parasitic Decay Logic
+                if (val < 0.8 && val > 0.0) {
+                    const rippleStrength = (lev / 40) * (1 - trans);
+                    // Spread to neighbors
+                    const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
+                    neighbors.forEach(([dx, dy]) => {
+                        let nx = x + dx, ny = y + dy;
+                        if(nx >=0 && nx < gridSize && ny >=0 && ny < gridSize) {
+                            if (!blockedByDefense) {
+                                nextGrid[ny][nx] -= 0.005 * rippleStrength;
+                            } else {
+                                // Defense recovers coherence
+                                nextGrid[ny][nx] += 0.002;
+                            }
+                        }
+                    });
+                }
+
+                nextGrid[y][x] = Math.min(1.0, Math.max(0, nextGrid[y][x]));
+                
+                // Drawing
+                ctx.fillStyle = `rgb(${val * 50}, ${val * 255}, ${val * 200})`;
+                if (val < 0.4) ctx.fillStyle = `rgb(${100 + (1-val)*155}, 20, 50)`; // Parasite/Foreclosure Red
+                
+                ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
+                
+                currentCoherence += nextGrid[y][x];
+                if (val < 0.5) totalParasite += (1 - val);
+            }
+        }
+
+        grid = nextGrid;
+        document.getElementById('coherence-score').innerText = (currentCoherence / (gridSize*gridSize)).toFixed(3);
+        document.getElementById('parasite-score').innerText = (totalParasite / 100).toFixed(2);
+
+        requestAnimationFrame(draw);
+    }
+
+    draw();
+</script>
+</body>
+</html>
