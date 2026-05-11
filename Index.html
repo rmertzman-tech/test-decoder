@@ -1,258 +1,230 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UCP V5.02 | 2008 Financial Analog & Defense Lab</title>
-    <style>
-        :root {
-            --bg: #0a0a0c;
-            --panel: #16161a;
-            --accent: #00f2ff;
-            --parasite: #ff3366;
-            --text: #e0e0e0;
-            --coherent: #00ff88;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>EBB Exam Decoder — Instructor Tool</title>
+<style>
+:root{--teal:#0d5e57;--amber:#8a3c0c;--red:#7f1d1d;--green:#14532d;
+  --bg:#f6f2ea;--paper:#fdfaf4;--ink:#1a1610;--muted:#6b6055;--border:#d4cec4;
+  --serif:Georgia,serif;--sans:'Segoe UI',Arial,sans-serif;--mono:'Courier New',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--serif);background:var(--bg);color:var(--ink);
+  font-size:1.15rem;line-height:1.8;min-height:100vh;padding:2rem 1.5rem}
+.shell{max-width:820px;margin:0 auto}
+h1{font-size:2rem;color:var(--teal);margin-bottom:.4rem}
+.sub{font-size:1.05rem;color:var(--muted);margin-bottom:2rem}
+.warn{background:#fef3c7;border:1px solid #d97706;border-radius:.4rem;
+  padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:1rem;color:#92400e}
+label{font-family:var(--sans);font-size:.95rem;font-weight:700;
+  display:block;margin-bottom:.4rem;color:var(--ink)}
+textarea{width:100%;border:2px solid var(--border);border-radius:.4rem;
+  padding:.9rem 1rem;font-family:var(--mono);font-size:.85rem;
+  min-height:120px;resize:vertical;background:var(--paper);color:var(--ink)}
+textarea:focus{border-color:var(--teal);outline:none}
+.btn{display:inline-flex;align-items:center;gap:.5rem;
+  font-family:var(--sans);font-size:1rem;font-weight:700;
+  padding:.65rem 1.5rem;border-radius:.4rem;border:none;cursor:pointer;
+  background:var(--teal);color:#fff;margin-top:1rem}
+.btn:hover{background:#0a4d47}
+.btn-red{background:var(--red)}
+.btn-red:hover{background:#6b1515}
+hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
 
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Sidebar Styling */
-        #sidebar {
-            width: 350px;
-            background: var(--panel);
-            padding: 20px;
-            border-right: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto;
-        }
-
-        /* Simulation Canvas */
-        #main-stage {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-        }
-
-        canvas {
-            border: 2px solid #333;
-            background: #000;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            image-rendering: pixelated;
-        }
-
-        /* UI Elements */
-        .card {
-            background: #1c1c21;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent);
-        }
-
-        h2, h3 { color: var(--accent); margin-top: 0; }
-        
-        .narrative-box {
-            font-size: 0.9rem;
-            line-height: 1.4;
-            color: #bbb;
-            background: #000;
-            padding: 10px;
-            border: 1px dashed #444;
-            margin-bottom: 10px;
-        }
-
-        .metric {
-            font-family: 'Courier New', monospace;
-            font-size: 1.1rem;
-            color: var(--coherent);
-        }
-
-        .defense-active {
-            border-left: 4px solid var(--coherent) !important;
-            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
-        }
-
-        button {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        button:hover { opacity: 0.9; }
-
-        .slider-label { display: flex; justify-content: space-between; font-size: 0.8rem; }
-        input[type=range] { width: 100%; margin: 10px 0; }
-
-    </style>
+/* Report */
+.report-header{background:var(--paper);border:1px solid var(--border);
+  border-left:5px solid var(--teal);border-radius:.5rem;
+  padding:1.4rem 1.6rem;margin-bottom:1.5rem}
+.report-header h2{font-size:1.6rem;color:var(--ink);margin-bottom:.3rem}
+.report-meta{font-family:var(--sans);font-size:.9rem;color:var(--muted)}
+.grade-block{display:inline-block;background:var(--teal);color:#fff;
+  font-size:2.5rem;font-family:var(--serif);padding:.5rem 1.5rem;
+  border-radius:.4rem;margin-bottom:.75rem}
+.grade-desc{font-family:var(--sans);font-size:.95rem;color:var(--muted)}
+.domain-section{margin-bottom:2rem;border:1px solid var(--border);
+  border-radius:.5rem;overflow:hidden;background:var(--paper)}
+.domain-title{background:var(--teal);color:#fff;
+  font-family:var(--sans);font-size:1rem;font-weight:700;
+  padding:.75rem 1.2rem}
+.level-item{padding:1.1rem 1.4rem;border-bottom:1px solid var(--border)}
+.level-item:last-child{border-bottom:none}
+.level-header{display:flex;align-items:center;gap:.75rem;
+  font-family:var(--sans);font-size:.9rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin-bottom:.6rem}
+.verdict-badge{font-size:.78rem;padding:.2rem .6rem;border-radius:2rem;font-weight:700}
+.vd{background:rgba(20,83,45,.12);color:var(--green)}
+.vp{background:rgba(138,60,12,.12);color:var(--amber)}
+.vn{background:rgba(127,29,29,.1);color:var(--red)}
+.va{background:#f3f4f6;color:#6b7280}
+.response-text{font-size:1rem;color:var(--ink);line-height:1.8;
+  background:#f9f8f5;border:1px solid var(--border);border-radius:.3rem;
+  padding:1rem 1.1rem;margin-bottom:.6rem;white-space:pre-wrap}
+.feedback-text{font-size:.92rem;color:#555;line-height:1.7;font-style:italic;
+  border-left:3px solid var(--border);padding-left:.9rem}
+.attempts-note{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-bottom:.35rem}
+.verify-ok{background:rgba(20,83,45,.1);border:1px solid rgba(20,83,45,.3);
+  color:var(--green);border-radius:.4rem;padding:.6rem 1rem;
+  font-family:var(--sans);font-size:.9rem;font-weight:700;margin-bottom:1rem;display:none}
+.verify-fail{background:rgba(127,29,29,.1);border:1px solid rgba(127,29,29,.3);
+  color:var(--red);border-radius:.4rem;padding:.6rem 1rem;
+  font-family:var(--sans);font-size:.9rem;font-weight:700;margin-bottom:1rem;display:none}
+.empty-note{color:var(--muted);font-style:italic;font-size:.95rem}
+</style>
 </head>
 <body>
+<div class="shell">
+  <h1>EBB Exam Decoder</h1>
+  <p class="sub">Instructor tool — Saint Petersburg College &middot; Ethics Beyond Boundaries</p>
 
-<div id="sidebar">
-    <h2>UCP V5.02 Engine</h2>
-    
-    <div class="card" id="narrative-card">
-        <h3>Timeline: <span id="year-label">2002</span></h3>
-        <div id="narrative-text" class="narrative-box">
-            Welcome to the Constructor's Dashboard. We begin in 2002. The system is coherent.
-        </div>
-        <button onclick="nextStep()">Advance Timeline →</button>
-    </div>
+  <div class="warn">
+    <strong>Instructor use only.</strong> Paste the student's Submission Token from their Canvas submission below. The token contains a verification hash — if the readable report was modified after submission, the hash will not match and you will see an alert. This tool runs entirely in your browser; no data is sent anywhere.
+  </div>
 
-    <div class="card">
-        <h3>Constructor Controls</h3>
-        <div class="slider-label"><span>Leverage Cycle (Farmer)</span><span id="lev-val">1.0x</span></div>
-        <input type="range" id="leverage" min="1" max="40" value="1" step="0.1">
+  <label for="tokenInput">Paste Submission Token here:</label>
+  <textarea id="tokenInput" placeholder="EBB-EXAM-v2:XXXXXXXX:eyJ..."></textarea>
+  <div>
+    <button class="btn" onclick="decode()">Decode Submission</button>
+    <button class="btn btn-red" onclick="clearAll()" style="margin-left:.5rem;background:transparent;color:var(--red);border:2px solid var(--red)">Clear</button>
+  </div>
 
-        <div class="slider-label"><span>Disclosure Transparency</span><span id="trans-val">100%</span></div>
-        <input type="range" id="transparency" min="0" max="100" value="100">
-    </div>
-
-    <div class="card" id="defense-card">
-        <h3>p-adic Defense Mechanism</h3>
-        <label>
-            <input type="checkbox" id="defense-toggle"> Activate p-adic Invariant Check
-        </label>
-        <p style="font-size: 0.75rem; color: #888; margin-top:5px;">
-            Prevents state transitions where |x|ₚ exceeds the integrity floor.
-        </p>
-    </div>
-
-    <div class="card">
-        <h3>Live Metrics</h3>
-        <div class="metric">AMC Coherence: <span id="coherence-score">1.000</span></div>
-        <div class="metric" style="color:var(--parasite)">Parasite Load: <span id="parasite-score">0.00</span></div>
-    </div>
-</div>
-
-<div id="main-stage">
-    <div style="margin-bottom: 10px; text-align: center;">
-        <h1 style="margin:0; color:var(--accent);">HOLOGRAPHIC COHERENCE MAP</h1>
-        <small>Bright = Functional Commonwealth | Dark = Foreclosure Ripples (Entropy)</small>
-    </div>
-    <canvas id="amcCanvas" width="600" height="600"></canvas>
+  <hr>
+  <div id="verifyOk" class="verify-ok">&#10003; Verification passed — token matches content. Submission is authentic.</div>
+  <div id="verifyFail" class="verify-fail">&#x26A0; Verification failed — the token hash does not match. The report may have been modified after submission. Compare token content (shown below) with the submitted PDF.</div>
+  <div id="output"></div>
 </div>
 
 <script>
-    const canvas = document.getElementById('amcCanvas');
-    const ctx = canvas.getContext('2d');
-    const gridSize = 60;
-    const cellSize = 10;
-    
-    // Agent Grid: 1.0 is healthy, 0.0 is foreclosed
-    let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(1.0));
-    let step = 0;
+function h32(s){
+  let h=5381;
+  for(let i=0;i<s.length;i++){h=((h<<5)+h)^s.charCodeAt(i);h=h>>>0;}
+  return h.toString(16).toUpperCase().padStart(8,'0');
+}
 
-    const timeline = [
-        { year: 2002, lev: 1, trans: 95, text: "2002-2004: Post-dotcom stability. Interest rates are low. Institutional agents begin seeking higher yield CIBs through subprime housing assets." },
-        { year: 2005, lev: 15, trans: 70, text: "2005-2006: The 'Leverage Cycle' accelerates. CDOs are created with Limited Disclosure. Note the minor Parasite Signatures appearing as localized incoherence." },
-        { year: 2007, lev: 32, trans: 30, text: "2007: Saturation. The system is highly leveraged. Regulatory Sync is complete. One small 'Incoherence Spike' could now trigger a holographic collapse." },
-        { year: 2008, lev: 40, trans: 5, text: "2008: CRASH. Lehman Brothers fails. Foreclosure ripples cascade through the 'Millions of People' (Retail Nodes). The Commonwealth fractures." }
-    ];
+function decode(){
+  const raw=document.getElementById('tokenInput').value.trim();
+  if(!raw){alert('Please paste a submission token first.');return;}
 
-    function nextStep() {
-        if (step < timeline.length - 1) {
-            step++;
-            const s = timeline[step];
-            document.getElementById('year-label').innerText = s.year;
-            document.getElementById('narrative-text').innerText = s.text;
-            document.getElementById('leverage').value = s.lev;
-            document.getElementById('transparency').value = s.trans;
-            
-            if(s.year === 2008) triggerIncoherenceSpikes(12);
-        } else {
-            alert("Simulation Complete. Analyze the 'Nothing for the Millions' outcome.");
-        }
-    }
+  const parts=raw.split(':');
+  // Format: EBB-EXAM-v1:HASH:ENCODED or EBB-EXAM-v2:HASH:ENCODED
+  if(parts.length<3||!parts[0].startsWith('EBB-EXAM')){
+    alert('This does not appear to be a valid EBB exam submission token. Please check that you copied the complete token from the student\'s Canvas submission.');
+    return;
+  }
 
-    function triggerIncoherenceSpikes(count) {
-        for(let i=0; i<count; i++) {
-            let rx = Math.floor(Math.random() * gridSize);
-            let ry = Math.floor(Math.random() * gridSize);
-            grid[ry][rx] = 0.1; 
-        }
-    }
+  const providedHash=parts[1];
+  const encoded=parts.slice(2).join(':'); // in case encoded contains colons
 
-    function draw() {
-        ctx.clearRect(0,0,600,600);
-        let currentCoherence = 0;
-        let totalParasite = 0;
+  let json, payload;
+  try{
+    json=decodeURIComponent(escape(atob(encoded)));
+    payload=JSON.parse(json);
+  }catch(e){
+    alert('Could not decode this token. It may be corrupted or incomplete. Error: '+e.message);
+    return;
+  }
 
-        const lev = parseFloat(document.getElementById('leverage').value);
-        const trans = parseFloat(document.getElementById('transparency').value) / 100;
-        const defenseOn = document.getElementById('defense-toggle').checked;
+  // Verify hash
+  const computedHash=h32(json);
+  const verifyOk=document.getElementById('verifyOk');
+  const verifyFail=document.getElementById('verifyFail');
+  if(computedHash===providedHash){
+    verifyOk.style.display='block'; verifyFail.style.display='none';
+  }else{
+    verifyFail.style.display='block'; verifyOk.style.display='none';
+    verifyFail.textContent='⚠ Verification failed — computed hash: '+computedHash+' · provided hash: '+providedHash+'. The report may have been modified after submission.';
+  }
 
-        document.getElementById('lev-val').innerText = lev.toFixed(1) + "x";
-        document.getElementById('trans-val').innerText = (trans*100).toFixed(0) + "%";
-        document.getElementById('defense-card').className = defenseOn ? "card defense-active" : "card";
+  renderReport(payload);
+}
 
-        // p-adic Defense Logic: |x|p 
-        // If leverage is too high relative to transparency, p-adic check blocks extraction
-        const p = 5;
-        const padicDist = Math.pow(p, -Math.floor(Math.log(lev + 0.1) / Math.log(p)));
-        const blockedByDefense = defenseOn && (padicDist < 0.2 || trans < 0.4);
+function renderReport(p){
+  const out=document.getElementById('output');
+  out.innerHTML='';
 
-        let nextGrid = grid.map(row => [...row]);
+  // Header
+  const hdr=document.createElement('div');
+  hdr.className='report-header';
+  const g=p.grade||{};
+  hdr.innerHTML=
+    '<div class="grade-block">'+esc(g.letter||'?')+'</div><br>'+
+    '<div class="grade-desc">'+esc(g.desc||'')+'</div>'+
+    '<h2 style="margin-top:.75rem">'+esc(p.student||'Unknown student')+'</h2>'+
+    '<div class="report-meta">'+
+    'Submitted: '+esc(p.submitted?new Date(p.submitted).toLocaleString():'unknown')+'<br>'+
+    'Started: '+esc(p.started?new Date(p.started).toLocaleString():'unknown')+
+    '</div>';
+  out.appendChild(hdr);
 
-        for (let y = 0; y < gridSize; y++) {
-            for (let x = 0; x < gridSize; x++) {
-                let val = grid[y][x];
+  const DOMAINS_META=[
+    {id:1,name:'Who You Are and How You See'},
+    {id:2,name:'Two Ways of Coordinating'},
+    {id:3,name:'When Institutions Consume the People Inside Them'},
+    {id:4,name:'Your Agency and How to Protect It'},
+    {id:5,name:'Ethical Frameworks and How to Use Them'},
+    {id:6,name:'The Bigger Picture'}
+  ];
+  const LEVELS=['recognition','application','integration'];
+  const LV_LABEL={recognition:'Recognition',application:'Application',integration:'Integration'};
 
-                // 1. Parasitic Decay Logic
-                if (val < 0.8 && val > 0.0) {
-                    const rippleStrength = (lev / 40) * (1 - trans);
-                    // Spread to neighbors
-                    const neighbors = [[0,1],[0,-1],[1,0],[-1,0]];
-                    neighbors.forEach(([dx, dy]) => {
-                        let nx = x + dx, ny = y + dy;
-                        if(nx >=0 && nx < gridSize && ny >=0 && ny < gridSize) {
-                            if (!blockedByDefense) {
-                                nextGrid[ny][nx] -= 0.005 * rippleStrength;
-                            } else {
-                                // Defense recovers coherence
-                                nextGrid[ny][nx] += 0.002;
-                            }
-                        }
-                    });
-                }
+  DOMAINS_META.forEach(d=>{
+    const sec=document.createElement('div'); sec.className='domain-section';
+    const title=document.createElement('div'); title.className='domain-title';
+    title.textContent='Domain '+d.id+': '+d.name;
+    sec.appendChild(title);
 
-                nextGrid[y][x] = Math.min(1.0, Math.max(0, nextGrid[y][x]));
-                
-                // Drawing
-                ctx.fillStyle = `rgb(${val * 50}, ${val * 255}, ${val * 200})`;
-                if (val < 0.4) ctx.fillStyle = `rgb(${100 + (1-val)*155}, 20, 50)`; // Parasite/Foreclosure Red
-                
-                ctx.fillRect(x * cellSize, y * cellSize, cellSize - 1, cellSize - 1);
-                
-                currentCoherence += nextGrid[y][x];
-                if (val < 0.5) totalParasite += (1 - val);
-            }
-        }
+    LEVELS.forEach(lv=>{
+      const key='d'+d.id+'_'+lv;
+      const rec=(p.responses||{})[key];
+      const item=document.createElement('div'); item.className='level-item';
 
-        grid = nextGrid;
-        document.getElementById('coherence-score').innerText = (currentCoherence / (gridSize*gridSize)).toFixed(3);
-        document.getElementById('parasite-score').innerText = (totalParasite / 100).toFixed(2);
+      const verdict=rec?.verdict||'';
+      const verdictMap={demonstrated:['Demonstrated','vd'],partial:['Partially Demonstrated','vp'],
+        notyet:['Not Yet','vn'],'':['Not Attempted','va']};
+      const[vl,vc]=verdictMap[verdict]||verdictMap[''];
 
-        requestAnimationFrame(draw);
-    }
+      const hdrDiv=document.createElement('div'); hdrDiv.className='level-header';
+      const lSpan=document.createElement('span'); lSpan.textContent=LV_LABEL[lv]; hdrDiv.appendChild(lSpan);
+      const vSpan=document.createElement('span'); vSpan.className='verdict-badge '+vc; vSpan.textContent=vl; hdrDiv.appendChild(vSpan);
+      if(rec?.attempts){
+        const aSpan=document.createElement('span');
+        aSpan.style.cssText='font-family:var(--mono);font-size:.72rem;color:var(--muted)';
+        aSpan.textContent=rec.attempts+(rec.attempts===1?' attempt':' attempts');
+        hdrDiv.appendChild(aSpan);
+      }
+      item.appendChild(hdrDiv);
 
-    draw();
+      if(rec?.response){
+        const resp=document.createElement('div'); resp.className='response-text';
+        resp.textContent=rec.response; item.appendChild(resp);
+      }else{
+        const na=document.createElement('p'); na.className='empty-note';
+        na.textContent='No response recorded.'; item.appendChild(na);
+      }
+
+      if(rec?.feedback){
+        const fb=document.createElement('div'); fb.className='feedback-text';
+        const fbClean=rec.feedback.replace(/VERDICT:\s*(DEMONSTRATED|PARTIALLY DEMONSTRATED|NOT YET)/i,'').trim();
+        fb.textContent='Companion feedback: '+fbClean; item.appendChild(fb);
+      }
+
+      sec.appendChild(item);
+    });
+    out.appendChild(sec);
+  });
+}
+
+function clearAll(){
+  document.getElementById('tokenInput').value='';
+  document.getElementById('output').innerHTML='';
+  document.getElementById('verifyOk').style.display='none';
+  document.getElementById('verifyFail').style.display='none';
+}
+
+function esc(s){
+  if(!s)return'';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
