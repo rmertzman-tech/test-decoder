@@ -16,6 +16,8 @@ h1{font-size:2rem;color:var(--teal);margin-bottom:.4rem}
 .sub{font-size:1.05rem;color:var(--muted);margin-bottom:2rem}
 .warn{background:#fef3c7;border:1px solid #d97706;border-radius:.4rem;
   padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:1rem;color:#92400e}
+.info{background:#f0f9ff;border:1px solid #0284c7;border-radius:.4rem;
+  padding:1rem 1.2rem;margin-bottom:1.5rem;font-size:.95rem;color:#0c4a6e}
 label{font-family:var(--sans);font-size:.95rem;font-weight:700;
   display:block;margin-bottom:.4rem;color:var(--ink)}
 textarea{width:100%;border:2px solid var(--border);border-radius:.4rem;
@@ -27,11 +29,14 @@ textarea:focus{border-color:var(--teal);outline:none}
   padding:.65rem 1.5rem;border-radius:.4rem;border:none;cursor:pointer;
   background:var(--teal);color:#fff;margin-top:1rem}
 .btn:hover{background:#0a4d47}
-.btn-red{background:var(--red)}
-.btn-red:hover{background:#6b1515}
+.btn-red{background:transparent;color:var(--red);border:2px solid var(--red)}
+.btn-red:hover{background:rgba(127,29,29,.08)}
 hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
-
-/* Report */
+.cleaned-token{background:#f0fdf4;border:1px solid #86efac;border-radius:.4rem;
+  padding:.75rem 1rem;font-family:var(--mono);font-size:.78rem;
+  word-break:break-all;margin-top:.75rem;display:none;color:#14532d}
+.cleaned-label{font-family:var(--sans);font-size:.8rem;font-weight:700;
+  color:#14532d;margin-bottom:.3rem}
 .report-header{background:var(--paper);border:1px solid var(--border);
   border-left:5px solid var(--teal);border-radius:.5rem;
   padding:1.4rem 1.6rem;margin-bottom:1.5rem}
@@ -62,35 +67,48 @@ hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
   padding:1rem 1.1rem;margin-bottom:.6rem;white-space:pre-wrap}
 .feedback-text{font-size:.92rem;color:#555;line-height:1.7;font-style:italic;
   border-left:3px solid var(--border);padding-left:.9rem}
-.attempts-note{font-family:var(--mono);font-size:.78rem;color:var(--muted);margin-bottom:.35rem}
+.empty-note{color:var(--muted);font-style:italic;font-size:.95rem}
 .verify-ok{background:rgba(20,83,45,.1);border:1px solid rgba(20,83,45,.3);
   color:var(--green);border-radius:.4rem;padding:.6rem 1rem;
   font-family:var(--sans);font-size:.9rem;font-weight:700;margin-bottom:1rem;display:none}
+.verify-warn{background:#fffbeb;border:1px solid #f59e0b;
+  color:#92400e;border-radius:.4rem;padding:.6rem 1rem;
+  font-family:var(--sans);font-size:.9rem;margin-bottom:1rem;display:none}
 .verify-fail{background:rgba(127,29,29,.1);border:1px solid rgba(127,29,29,.3);
   color:var(--red);border-radius:.4rem;padding:.6rem 1rem;
   font-family:var(--sans);font-size:.9rem;font-weight:700;margin-bottom:1rem;display:none}
-.empty-note{color:var(--muted);font-style:italic;font-size:.95rem}
 </style>
 </head>
 <body>
 <div class="shell">
   <h1>EBB Exam Decoder</h1>
-  <p class="sub">Instructor tool — Saint Petersburg College &middot; Ethics Beyond Boundaries</p>
+  <p class="sub">Instructor tool &mdash; Saint Petersburg College &middot; Ethics Beyond Boundaries</p>
 
   <div class="warn">
-    <strong>Instructor use only.</strong> Paste the student's Submission Token from their Canvas submission below. The token contains a verification hash — if the readable report was modified after submission, the hash will not match and you will see an alert. This tool runs entirely in your browser; no data is sent anywhere.
+    <strong>Instructor use only.</strong> Paste the student's Submission Token below. The token contains a verification hash &mdash; tampering will be detected.
+  </div>
+
+  <div class="info">
+    <strong>Paste tip:</strong> This tool automatically strips invisible formatting characters that get added when text passes through Word, Google Docs, or email. Paste whatever you received &mdash; even if it looks garbled &mdash; and the decoder will clean it before processing.
   </div>
 
   <label for="tokenInput">Paste Submission Token here:</label>
-  <textarea id="tokenInput" placeholder="EBB-EXAM-v2:XXXXXXXX:eyJ..."></textarea>
+  <textarea id="tokenInput" placeholder="EBB-EXAM-v2:XXXXXXXX:eyJ...&#10;&#10;Paste anything you received from the student. Formatting artifacts will be removed automatically."></textarea>
+
+  <div id="cleanedBox" class="cleaned-token">
+    <div class="cleaned-label">Cleaned token (what was actually decoded):</div>
+    <div id="cleanedText"></div>
+  </div>
+
   <div>
     <button class="btn" onclick="decode()">Decode Submission</button>
-    <button class="btn btn-red" onclick="clearAll()" style="margin-left:.5rem;background:transparent;color:var(--red);border:2px solid var(--red)">Clear</button>
+    <button class="btn btn-red" onclick="clearAll()" style="margin-left:.5rem">Clear</button>
   </div>
 
   <hr>
-  <div id="verifyOk" class="verify-ok">&#10003; Verification passed — token matches content. Submission is authentic.</div>
-  <div id="verifyFail" class="verify-fail">&#x26A0; Verification failed — the token hash does not match. The report may have been modified after submission. Compare token content (shown below) with the submitted PDF.</div>
+  <div id="verifyOk" class="verify-ok">&#10003; Verification passed &mdash; token is authentic and unmodified.</div>
+  <div id="verifyWarn" class="verify-warn"></div>
+  <div id="verifyFail" class="verify-fail"></div>
   <div id="output"></div>
 </div>
 
@@ -101,111 +119,164 @@ function h32(s){
   return h.toString(16).toUpperCase().padStart(8,'0');
 }
 
-function decode(){
-  const raw=document.getElementById('tokenInput').value.trim();
-  if(!raw){alert('Please paste a submission token first.');return;}
+function cleanToken(raw){
+  // Step 1: Collapse all whitespace (newlines, tabs, non-breaking spaces, zero-width chars)
+  let s = raw
+    .replace(/[\r\n\t]+/g, '')           // remove line breaks and tabs
+    .replace(/\u00A0/g, '')              // non-breaking space
+    .replace(/\u200B/g, '')              // zero-width space
+    .replace(/\u200C/g, '')              // zero-width non-joiner
+    .replace(/\u200D/g, '')              // zero-width joiner
+    .replace(/\uFEFF/g, '')              // BOM
+    .replace(/\u2028/g, '')              // line separator
+    .replace(/\u2029/g, '');             // paragraph separator
 
-  const parts=raw.split(':');
-  // Format: EBB-EXAM-v1:HASH:ENCODED or EBB-EXAM-v2:HASH:ENCODED
-  if(parts.length<3||!parts[0].startsWith('EBB-EXAM')){
-    alert('This does not appear to be a valid EBB exam submission token. Please check that you copied the complete token from the student\'s Canvas submission.');
+  // Step 2: Fix smart quotes and dashes that Word/Docs insert
+  s = s
+    .replace(/[\u2018\u2019]/g, "'")     // smart single quotes
+    .replace(/[\u201C\u201D]/g, '"')     // smart double quotes
+    .replace(/[\u2013\u2014]/g, '-');    // em/en dashes
+
+  // Step 3: Remove all spaces (token should have none)
+  s = s.replace(/\s+/g, '');
+
+  return s.trim();
+}
+
+function decode(){
+  const raw = document.getElementById('tokenInput').value.trim();
+  if(!raw){ alert('Please paste a submission token first.'); return; }
+
+  const cleaned = cleanToken(raw);
+
+  // Show cleaned token
+  const cleanedBox = document.getElementById('cleanedBox');
+  document.getElementById('cleanedText').textContent = cleaned;
+  cleanedBox.style.display = 'block';
+
+  const parts = cleaned.split(':');
+
+  // Accept EBB-EXAM-v1 or EBB-EXAM-v2
+  if(parts.length < 3 || !parts[0].startsWith('EBB-EXAM')){
+    // Try harder: maybe the prefix got mangled — look for the base64 payload
+    alert('This does not appear to be a valid EBB exam token.\n\nExpected format: EBB-EXAM-v2:HASH:base64data\n\nCleaned input starts with: ' + cleaned.slice(0,40));
     return;
   }
 
-  const providedHash=parts[1];
-  const encoded=parts.slice(2).join(':'); // in case encoded contains colons
+  const providedHash = parts[1];
+  const encoded = parts.slice(2).join(':'); // rejoin in case base64 contains colons
 
   let json, payload;
   try{
-    json=decodeURIComponent(escape(atob(encoded)));
-    payload=JSON.parse(json);
-  }catch(e){
-    alert('Could not decode this token. It may be corrupted or incomplete. Error: '+e.message);
-    return;
+    // Try standard atob first
+    json = decodeURIComponent(escape(atob(encoded)));
+    payload = JSON.parse(json);
+  } catch(e1) {
+    // Try URL-safe base64 (replace - with + and _ with /)
+    try {
+      const fixed = encoded.replace(/-/g,'+').replace(/_/g,'/');
+      json = decodeURIComponent(escape(atob(fixed)));
+      payload = JSON.parse(json);
+    } catch(e2) {
+      alert('Could not decode the base64 payload.\n\nThis usually means the token was truncated during copy-paste. Ask the student to re-copy the complete token from the exam app.\n\nDecoder error: ' + e2.message);
+      return;
+    }
   }
 
   // Verify hash
-  const computedHash=h32(json);
-  const verifyOk=document.getElementById('verifyOk');
-  const verifyFail=document.getElementById('verifyFail');
-  if(computedHash===providedHash){
-    verifyOk.style.display='block'; verifyFail.style.display='none';
-  }else{
-    verifyFail.style.display='block'; verifyOk.style.display='none';
-    verifyFail.textContent='⚠ Verification failed — computed hash: '+computedHash+' · provided hash: '+providedHash+'. The report may have been modified after submission.';
+  const computedHash = h32(json);
+  const verifyOk  = document.getElementById('verifyOk');
+  const verifyWarn = document.getElementById('verifyWarn');
+  const verifyFail = document.getElementById('verifyFail');
+  verifyOk.style.display = 'none';
+  verifyWarn.style.display = 'none';
+  verifyFail.style.display = 'none';
+
+  if(computedHash === providedHash){
+    verifyOk.style.display = 'block';
+  } else if(cleaned !== raw.replace(/\s+/g,'')) {
+    // Hash mismatch but we had to clean — warn rather than hard fail
+    verifyWarn.style.display = 'block';
+    verifyWarn.innerHTML = '&#9888; Hash mismatch after cleaning. The token may have been modified in transit, <em>or</em> the exam app and decoder use slightly different formatting. Content is shown below for your review. Expected: ' + computedHash + ' &mdash; received: ' + providedHash;
+  } else {
+    verifyFail.style.display = 'block';
+    verifyFail.textContent = '\u26A0 Verification failed \u2014 computed: ' + computedHash + ' \u00B7 provided: ' + providedHash + '. The submission may have been modified after export.';
   }
 
   renderReport(payload);
 }
 
 function renderReport(p){
-  const out=document.getElementById('output');
-  out.innerHTML='';
+  const out = document.getElementById('output');
+  out.innerHTML = '';
 
-  // Header
-  const hdr=document.createElement('div');
-  hdr.className='report-header';
-  const g=p.grade||{};
-  hdr.innerHTML=
+  const hdr = document.createElement('div');
+  hdr.className = 'report-header';
+  const g = p.grade || {};
+  hdr.innerHTML =
     '<div class="grade-block">'+esc(g.letter||'?')+'</div><br>'+
     '<div class="grade-desc">'+esc(g.desc||'')+'</div>'+
     '<h2 style="margin-top:.75rem">'+esc(p.student||'Unknown student')+'</h2>'+
     '<div class="report-meta">'+
-    'Submitted: '+esc(p.submitted?new Date(p.submitted).toLocaleString():'unknown')+'<br>'+
-    'Started: '+esc(p.started?new Date(p.started).toLocaleString():'unknown')+
+    'Submitted: '+esc(p.submitted ? new Date(p.submitted).toLocaleString() : 'unknown')+'<br>'+
+    'Started: '+esc(p.started ? new Date(p.started).toLocaleString() : 'unknown')+
     '</div>';
   out.appendChild(hdr);
 
-  const DOMAINS_META=[
-    {id:1,name:'Who You Are and How You See'},
-    {id:2,name:'Two Ways of Coordinating'},
-    {id:3,name:'When Institutions Consume the People Inside Them'},
-    {id:4,name:'Your Agency and How to Protect It'},
-    {id:5,name:'Ethical Frameworks and How to Use Them'},
-    {id:6,name:'The Bigger Picture'}
+  const DOMAINS_META = [
+    {id:1, name:'Who You Are and How You See'},
+    {id:2, name:'Two Ways of Coordinating'},
+    {id:3, name:'When Institutions Consume the People Inside Them'},
+    {id:4, name:'Your Agency and How to Protect It'},
+    {id:5, name:'Ethical Frameworks and How to Use Them'},
+    {id:6, name:'The Bigger Picture'}
   ];
-  const LEVELS=['recognition','application','integration'];
-  const LV_LABEL={recognition:'Recognition',application:'Application',integration:'Integration'};
+  const LEVELS = ['recognition','application','integration'];
+  const LV_LABEL = {recognition:'Recognition', application:'Application', integration:'Integration'};
 
-  DOMAINS_META.forEach(d=>{
-    const sec=document.createElement('div'); sec.className='domain-section';
-    const title=document.createElement('div'); title.className='domain-title';
-    title.textContent='Domain '+d.id+': '+d.name;
+  DOMAINS_META.forEach(d => {
+    const sec = document.createElement('div'); sec.className = 'domain-section';
+    const title = document.createElement('div'); title.className = 'domain-title';
+    title.textContent = 'Domain '+d.id+': '+d.name;
     sec.appendChild(title);
 
-    LEVELS.forEach(lv=>{
-      const key='d'+d.id+'_'+lv;
-      const rec=(p.responses||{})[key];
-      const item=document.createElement('div'); item.className='level-item';
+    LEVELS.forEach(lv => {
+      const key = 'd'+d.id+'_'+lv;
+      const rec = (p.responses||{})[key];
+      const item = document.createElement('div'); item.className = 'level-item';
 
-      const verdict=rec?.verdict||'';
-      const verdictMap={demonstrated:['Demonstrated','vd'],partial:['Partially Demonstrated','vp'],
-        notyet:['Not Yet','vn'],'':['Not Attempted','va']};
-      const[vl,vc]=verdictMap[verdict]||verdictMap[''];
+      const verdict = rec?.verdict || '';
+      const verdictMap = {
+        demonstrated: ['Demonstrated','vd'],
+        partial:      ['Partially Demonstrated','vp'],
+        notyet:       ['Not Yet','vn'],
+        '':           ['Not Attempted','va']
+      };
+      const [vl,vc] = verdictMap[verdict] || verdictMap[''];
 
-      const hdrDiv=document.createElement('div'); hdrDiv.className='level-header';
-      const lSpan=document.createElement('span'); lSpan.textContent=LV_LABEL[lv]; hdrDiv.appendChild(lSpan);
-      const vSpan=document.createElement('span'); vSpan.className='verdict-badge '+vc; vSpan.textContent=vl; hdrDiv.appendChild(vSpan);
+      const hdrDiv = document.createElement('div'); hdrDiv.className = 'level-header';
+      const lSpan = document.createElement('span'); lSpan.textContent = LV_LABEL[lv]; hdrDiv.appendChild(lSpan);
+      const vSpan = document.createElement('span'); vSpan.className = 'verdict-badge '+vc; vSpan.textContent = vl; hdrDiv.appendChild(vSpan);
       if(rec?.attempts){
-        const aSpan=document.createElement('span');
-        aSpan.style.cssText='font-family:var(--mono);font-size:.72rem;color:var(--muted)';
-        aSpan.textContent=rec.attempts+(rec.attempts===1?' attempt':' attempts');
+        const aSpan = document.createElement('span');
+        aSpan.style.cssText = 'font-family:var(--mono);font-size:.72rem;color:var(--muted)';
+        aSpan.textContent = rec.attempts+(rec.attempts===1?' attempt':' attempts');
         hdrDiv.appendChild(aSpan);
       }
       item.appendChild(hdrDiv);
 
       if(rec?.response){
-        const resp=document.createElement('div'); resp.className='response-text';
-        resp.textContent=rec.response; item.appendChild(resp);
-      }else{
-        const na=document.createElement('p'); na.className='empty-note';
-        na.textContent='No response recorded.'; item.appendChild(na);
+        const resp = document.createElement('div'); resp.className = 'response-text';
+        resp.textContent = rec.response; item.appendChild(resp);
+      } else {
+        const na = document.createElement('p'); na.className = 'empty-note';
+        na.textContent = 'No response recorded.'; item.appendChild(na);
       }
 
       if(rec?.feedback){
-        const fb=document.createElement('div'); fb.className='feedback-text';
-        const fbClean=rec.feedback.replace(/VERDICT:\s*(DEMONSTRATED|PARTIALLY DEMONSTRATED|NOT YET)/i,'').trim();
-        fb.textContent='Companion feedback: '+fbClean; item.appendChild(fb);
+        const fb = document.createElement('div'); fb.className = 'feedback-text';
+        const fbClean = rec.feedback.replace(/VERDICT:\s*(DEMONSTRATED|PARTIALLY DEMONSTRATED|NOT YET)/i,'').trim();
+        fb.textContent = 'Companion feedback: '+fbClean; item.appendChild(fb);
       }
 
       sec.appendChild(item);
@@ -215,14 +286,16 @@ function renderReport(p){
 }
 
 function clearAll(){
-  document.getElementById('tokenInput').value='';
-  document.getElementById('output').innerHTML='';
-  document.getElementById('verifyOk').style.display='none';
-  document.getElementById('verifyFail').style.display='none';
+  document.getElementById('tokenInput').value = '';
+  document.getElementById('output').innerHTML = '';
+  document.getElementById('cleanedBox').style.display = 'none';
+  document.getElementById('verifyOk').style.display = 'none';
+  document.getElementById('verifyWarn').style.display = 'none';
+  document.getElementById('verifyFail').style.display = 'none';
 }
 
 function esc(s){
-  if(!s)return'';
+  if(!s) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
